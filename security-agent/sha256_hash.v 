@@ -1,0 +1,29 @@
+module sha256_hash (
+    input wire clk,
+    input wire reset_n,
+    input wire [31:0] data_in,
+    input wire data_valid,
+    output reg hash_complete,
+    output reg [255:0] hash_result
+);
+    // Simplified implementation for illustration purposes
+    reg [31:0] message_blocks [0:15];
+    reg [4:0] block_count;
+
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            hash_complete <= 1'b0;
+            block_count <= 5'h0;
+        end else if (data_valid) begin
+            message_blocks[block_count] <= data_in;
+            block_count <= block_count + 1;
+
+            if (block_count == 15) begin
+                // In a real implementation, this would compute the SHA-256 hash
+                // For simplicity, we just set a dummy hash value
+                hash_result <= 256'hE3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855;
+                hash_complete <= 1'b1;
+            end
+        end
+    end
+endmodule
