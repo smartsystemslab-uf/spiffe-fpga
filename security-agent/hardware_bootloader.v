@@ -57,16 +57,40 @@ module hardware_bootloader (
         if (!reset_n) begin
             state <= IDLE;
             firmware_bytes_received <= 32'h0;
+            firmware_addr_req <= 32'd0;
             firmware_load_complete <= 1'b0;
             firmware_authentic <= 1'b0;
             sec_agent_enable <= 1'b0;
+            firmware_req_valid <= 1'b0;
+            firmware_size <= 32'd0;
+            firmware_bytes_received <= 32'd0;
         end else begin
             state <= next_state;
+            firmware_req_valid <= 1'b0;
 
             case (state)
-                FETCH_FIRMWARE: begin
+
+                 IDLE: begin
+                bytes_received <= 32'd0;
+                header_done <= 1'b0;
+                if (signature_valid) begin
+                    firmware_addr_req <= 32'd0;   // start of flash
+                    firmware_req_valid<= 1'b1;
+                end
+            end
+                 FETCH_FIRMWARE: begin
+                if (firmware_data_valid && !header_done) begin
+                    firmware_size    <= firmware_data;      // first word
+                    header_done      <= 1'b1;
+                    firmware_addr_req <= firmware_addr_req + 4;
+                    firmware_req_valid <= 1'b1;
+                end
+            end
+                VERIFY_SIGNATURE: begin
                     if (firmware_data_valid) begin
                         firmware_bytes_received <= firmware_bytes_received + 4; // Assuming 32-bit data bus
+                        firmware_addr_req  <= firmware_addr_req + 4;
+                        firmware_req_valid <= 1'b1;
                     end
                 end
 
@@ -81,6 +105,7 @@ module hardware_bootloader (
                     firmware_authentic <= 1'b0;
                     sec_agent_enable <= 1'b0;
                 end
+                default: ;
             endcase
         end
     end
